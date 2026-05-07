@@ -1,1 +1,346 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>T-Maxi</title>
+  <meta name="description" content="T-Maxi ist ein kleines persoenliches System im Internet." />
+  <script>
+    if (localStorage.getItem("siteTheme") === "light") {
+      document.documentElement.classList.add("theme-light");
+    }
+  </script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="system" id="system">
+    <section class="boot" id="boot" aria-labelledby="bootTitle">
+      <div class="terminal">
+        <header class="terminal-bar">
+          <span class="dot red" aria-hidden="true"></span>
+          <span class="dot yellow" aria-hidden="true"></span>
+          <span class="dot green" aria-hidden="true"></span>
+          <span class="terminal-title">Terminal</span>
+        </header>
 
+        <div class="terminal-body">
+          <h1 class="sr-only" id="bootTitle">T-Maxi Systemstart</h1>
+          <p class="boot-copy" id="bootCopy" aria-live="polite"></p>
+
+          <div class="boot-actions" id="bootActions">
+            <p>Startet automatisch...</p>
+            <button class="soft-button" id="showSystems" type="button" onclick="window.showBootOptions?.()">
+              System waehlen
+            </button>
+          </div>
+
+          <nav class="boot-options" id="bootOptions" aria-label="System waehlen" hidden>
+            <button class="boot-option" type="button" data-start-system="maxios" onclick="window.startSystem?.('maxios')">
+              <span>[1]</span>
+              <strong>MaxiOS</strong>
+              <small>Fenster, Apps und Desktop-Gefuehl.</small>
+            </button>
+
+            <button class="boot-option" type="button" data-start-system="minios" onclick="window.startSystem?.('minios')">
+              <span>[2]</span>
+              <strong>miniOS</strong>
+              <small>Ein Homescreen fuer kleine Displays.</small>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+    <section class="desktop-shell" id="maxios" aria-label="T-Maxi Desktop" hidden>
+      <header class="topbar">
+        <button class="brand" type="button" data-open-app="mail">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>MaxiOS</span>
+        </button>
+
+        <nav class="menu" aria-label="Desktop Navigation">
+          <span>Datei</span>
+          <div class="topbar-menu">
+            <button type="button" id="statsMenuButton" aria-expanded="false" aria-controls="statsMenu">
+              Statistiken
+            </button>
+
+            <div class="topbar-menu-panel stats-menu-panel" id="statsMenu" hidden>
+              <div class="stats-menu-row">
+                <span>Aufrufe</span>
+                <strong data-stats-pageviews>–</strong>
+              </div>
+
+              <div class="stats-menu-row">
+                <span>Aktuelle Nutzer</span>
+                <strong data-stats-active>–</strong>
+              </div>
+
+              <div class="stats-menu-row">
+                <span>Likes</span>
+                <strong data-stats-likes>–</strong>
+              </div>
+
+              <p data-stats-updated>Wird geladen...</p>
+            </div>
+          </div>
+          <div class="topbar-menu">
+            <button type="button" id="appearanceMenuButton" aria-expanded="false" aria-controls="appearanceMenu">
+              Darstellung
+            </button>
+
+            <div class="topbar-menu-panel" id="appearanceMenu" hidden>
+              <button type="button" data-theme-option="dark">Dunkel</button>
+              <button type="button" data-theme-option="light">Hell</button>
+            </div>
+          </div>
+          <span>Fenster</span>
+          <span>Hilfe</span>
+        </nav>
+
+        <span class="clock" id="desktopClock">--:--</span>
+      </header>
+
+      <div class="desktop">
+        <div class="desktop-icons" aria-label="Apps">
+          <button class="app-icon" type="button" data-open-app="music" style="--x: 24px; --y: 26px;">
+            <span class="icon-badge" aria-hidden="true">
+              <img src="./assets/icons/music.svg" alt="" draggable="false" />
+            </span>
+            <span>Musik</span>
+          </button>
+
+          <button class="app-icon" type="button" data-open-app="mail" style="--x: 24px; --y: 138px;">
+            <span class="icon-badge" aria-hidden="true">
+              <img src="./assets/icons/mail.svg" alt="" draggable="false" />
+            </span>
+            <span>Mail</span>
+          </button>
+
+          <button class="app-icon" type="button" data-open-app="flappy" style="--x: 24px; --y: 250px;">
+            <span class="icon-badge" aria-hidden="true">
+              <img src="./assets/icons/flappy-bird.svg" alt="" draggable="false" />
+            </span>
+            <span>Flappy Bird</span>
+          </button>
+        </div>
+
+        <div class="window-layer" id="windowLayer" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="phone-shell" id="minios" aria-label="T-Maxi miniOS" hidden>
+      <div class="phone">
+        <div class="dynamic-island" aria-hidden="true"></div>
+
+        <header class="statusbar">
+          <span class="status-time" id="phoneClock">--:--</span>
+
+          <span class="status-icons" aria-hidden="true">
+            <span class="status-cellular">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+
+            <span class="status-wifi">
+              <svg viewBox="0 0 20 15" aria-hidden="true">
+                <path d="M2.4 3.7C6.7 0.3 13.3 0.3 17.6 3.7" />
+                <path d="M5.4 7.1C8.1 5.1 11.9 5.1 14.6 7.1" />
+                <path d="M8.2 10.2C9.3 9.5 10.7 9.5 11.8 10.2" />
+                <circle cx="10" cy="13.4" r="1.15" />
+              </svg>
+            </span>
+
+            <span class="status-battery">
+              <span></span>
+            </span>
+          </span>
+        </header>
+
+        <div class="home-grid">
+          <button class="phone-app" type="button" data-open-phone-app="music">
+            <span class="icon-badge" aria-hidden="true">
+              <img src="./assets/icons/music.svg" alt="" draggable="false" />
+            </span>
+            <span>Musik</span>
+          </button>
+
+          <button class="phone-app" type="button" data-open-phone-app="mail">
+            <span class="icon-badge" aria-hidden="true">
+              <img src="./assets/icons/mail.svg" alt="" draggable="false" />
+            </span>
+            <span>Mail</span>
+          </button>
+
+          <button class="phone-app" type="button" data-open-phone-app="flappy">
+            <span class="icon-badge" aria-hidden="true">
+              <img src="./assets/icons/flappy-bird.svg" alt="" draggable="false" />
+            </span>
+            <span>Flappy Bird</span>
+          </button>
+
+          <button class="phone-app" type="button" data-open-phone-app="settings">
+            <span class="icon-badge" aria-hidden="true">
+              <img src="./assets/icons/settings.svg" alt="" draggable="false" />
+            </span>
+            <span>Einstellung</span>
+          </button>
+        </div>
+
+        <article class="phone-screen" id="phoneScreen" aria-hidden="true">
+          <header>
+            <button class="phone-back-button" type="button" id="closePhoneApp" aria-label="Zurueck zum Homescreen">
+              <span aria-hidden="true"></span>
+            </button>
+            <h2 id="phoneAppTitle">App</h2>
+          </header>
+          <div class="phone-content" id="phoneContent"></div>
+          <button class="home-indicator" id="homeIndicator" type="button" aria-label="Zurueck zum Homescreen"></button>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <template id="app-music">
+    <div class="music-app">
+      <header class="music-hero">
+        <div class="music-cover" aria-hidden="true">
+          <span class="music-note">♪</span>
+        </div>
+
+        <div>
+          <p class="music-kicker">Playlist</p>
+          <strong>Seventeen</strong>
+          <p>Eine Playlist fuer nebenbei.</p>
+        </div>
+      </header>
+
+      <iframe
+        class="music-frame"
+        allow="autoplay *; encrypted-media *;"
+        title="Apple Music Playlist Seventeen"
+        sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+        src="https://embed.music.apple.com/de/playlist/seventeen/pl.u-8aAVXG9hmx2x65x?theme=dark"
+      ></iframe>
+    </div>
+  </template>
+
+  <template id="app-flappy">
+    <div class="flappy-app">
+      <div class="flappy-game" data-flappy-game>
+        <div class="flappy-hud">
+          <span>Score <strong data-flappy-score>0</strong></span>
+          <span>Best <strong data-flappy-best>0</strong></span>
+        </div>
+
+        <canvas
+          class="flappy-canvas"
+          data-flappy-canvas
+          width="420"
+          height="560"
+          aria-label="Flappy Bird Spiel"
+          role="button"
+          tabindex="0"
+        ></canvas>
+      </div>
+    </div>
+  </template>
+
+  <template id="app-mail">
+    <div class="mail-app">
+      <div class="mail-toolbar">
+        <button type="submit" form="mailForm">Senden</button>
+      </div>
+
+      <form
+        class="mail-compose"
+        id="mailForm"
+        action="https://formspree.io/f/xvzdlego"
+        method="POST"
+      >
+        <label>
+          <span>An</span>
+          <input type="text" name="to" value="Torben Maximilian" readonly />
+        </label>
+
+        <label>
+          <span>Von</span>
+          <input name="name" type="text" placeholder="Dein Name" autocomplete="name" required />
+        </label>
+
+        <label>
+          <span>E-Mail</span>
+          <input name="email" type="email" placeholder="deine@mail.de" autocomplete="email" required />
+        </label>
+
+        <label>
+          <span>Betreff</span>
+          <input name="subject" type="text" placeholder="Worum geht es?" />
+        </label>
+
+        <textarea
+          class="mail-message"
+          name="message"
+          placeholder="Schreib deine Nachricht..."
+          required
+        ></textarea>
+
+        <input type="hidden" name="source" value="t-maxi-mail" />
+
+        <div
+          class="mail-turnstile"
+          data-turnstile
+          data-sitekey="0x4AAAAAADDEUylFGy2boS8x"
+        ></div>
+
+        <p class="mail-status" data-mail-status aria-live="polite"></p>
+      </form>
+    </div>
+  </template>
+
+  <template id="app-settings">
+    <div class="settings-app">
+      <section class="settings-section" aria-labelledby="settingsGeneralTitle">
+        <h3 id="settingsGeneralTitle">Allgemein</h3>
+
+        <div class="settings-card">
+          <div class="settings-row">
+            <span>System</span>
+            <strong>miniOS</strong>
+          </div>
+
+          <div class="settings-row">
+            <span>Aufrufe</span>
+            <strong data-stats-pageviews>–</strong>
+          </div>
+
+          <div class="settings-row">
+            <span>Aktuelle Nutzer</span>
+            <strong data-stats-active>–</strong>
+          </div>
+
+          <div class="settings-row">
+            <span>Likes</span>
+            <strong data-stats-likes>–</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section" aria-labelledby="settingsAppearanceTitle">
+        <h3 id="settingsAppearanceTitle">Darstellung</h3>
+
+        <div class="settings-card">
+          <div class="theme-switch" role="group" aria-label="Darstellung auswaehlen">
+            <button type="button" data-theme-option="dark">Dunkel</button>
+            <button type="button" data-theme-option="light">Hell</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
