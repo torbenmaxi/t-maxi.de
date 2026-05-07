@@ -18,18 +18,28 @@ const appearanceMenuButton = document.getElementById("appearanceMenuButton");
 const appearanceMenu = document.getElementById("appearanceMenu");
 const statsMenuButton = document.getElementById("statsMenuButton");
 const statsMenu = document.getElementById("statsMenu");
+const likePopup = document.getElementById("likePopup");
+const likePopupStatus = document.querySelector("[data-like-popup-status]");
+const likePopupButton = document.querySelector("[data-like-site]");
 
 const appTitles = {
   music: "Musik",
   mail: "Mail",
   flappy: "Flappy Bird",
-  settings: "Einstellung"
+  settings: "Einstellungen"
 };
 
 const appPositions = {
   music: { x: 306, y: 156 },
   mail: { x: 260, y: 96 },
   flappy: { x: 336, y: 128 }
+};
+
+const windowSizeBounds = {
+  music: { minWidth: 460, minHeight: 500, maxWidth: 620, maxHeight: 620 },
+  mail: { minWidth: 520, minHeight: 520, maxWidth: 760, maxHeight: 720 },
+  flappy: { minWidth: 460, minHeight: 520, maxWidth: 640, maxHeight: 820 },
+  default: { minWidth: 460, minHeight: 390, maxWidth: 680, maxHeight: 680 }
 };
 
 let autoStart = true;
@@ -42,6 +52,7 @@ const statsLikeSlug = "home";
 
 let supabaseClient = null;
 let statsStarted = false;
+let likePopupTimer = null;
 
 function wait(milliseconds) {
   return new Promise((resolve) => {
@@ -85,10 +96,12 @@ function startSystem(systemName) {
     !systemName && window.matchMedia("(max-width: 820px)").matches
   );
 
+  document.documentElement.dataset.system = useMini ? "minios" : "maxios";
   maxios.hidden = useMini;
   maxios.style.display = useMini ? "none" : "block";
   minios.hidden = !useMini;
   minios.style.display = useMini ? "grid" : "none";
+  scheduleLikePopup();
 
   window.setTimeout(() => {
     boot.hidden = true;
@@ -117,6 +130,7 @@ function applyTheme(theme) {
 
   document.documentElement.classList.toggle("theme-light", isLight);
   localStorage.setItem("siteTheme", normalizedTheme);
+  updateMusicFramesTheme(normalizedTheme);
 
   document.querySelectorAll("[data-theme-option]").forEach((button) => {
     const isActive = button.dataset.themeOption === normalizedTheme;
@@ -125,6 +139,17 @@ function applyTheme(theme) {
     button.setAttribute("aria-pressed", String(isActive));
   });
 
+}
+
+function updateMusicFramesTheme(theme) {
+  const normalizedTheme = theme === "light" ? "light" : "dark";
+
+  document.querySelectorAll(".music-frame").forEach((frame) => {
+    const url = new URL(frame.src);
+
+    url.searchParams.set("theme", normalizedTheme);
+    frame.src = url.toString();
+  });
 }
 
 function setupTopbarMenus() {
@@ -270,6 +295,50 @@ async function loadLikes(client) {
   return data?.like_count || 0;
 }
 
+async function saveLike() {
+  if (localStorage.getItem("siteLiked") === "true") {
+    return loadDisplayedLikes();
+  }
+
+  localStorage.setItem("siteLiked", "true");
+
+  try {
+    const client = await getSupabaseClient();
+
+    if (!client) throw new Error("Supabase nicht verfuegbar.");
+
+    const nextLikes = await loadLikes(client) + 1;
+    const { error } = await client.from("site_likes").upsert({
+      slug: statsLikeSlug,
+      like_count: nextLikes
+    });
+
+    if (error) throw error;
+
+    updateStatElements("[data-stats-likes]", nextLikes);
+
+    return nextLikes;
+  } catch (error) {
+    console.warn("Like konnte nicht gespeichert werden:", error);
+
+    const fallbackLikes = loadDisplayedLikes() + 1;
+    localStorage.setItem("siteLocalLikes", String(fallbackLikes));
+    updateStatElements("[data-stats-likes]", fallbackLikes);
+
+    return fallbackLikes;
+  }
+}
+
+function loadDisplayedLikes() {
+  const statsValue = document.querySelector("[data-stats-likes]")?.textContent;
+  const parsedStatsValue = Number(statsValue);
+  const parsedLocalValue = Number(localStorage.getItem("siteLocalLikes") || 0);
+
+  if (Number.isFinite(parsedStatsValue)) return parsedStatsValue;
+
+  return Number.isFinite(parsedLocalValue) ? parsedLocalValue : 0;
+}
+
 async function loadActiveVisitors(client) {
   await client.from("site_active_visitors").upsert({
     visitor_id: getVisitorId(),
@@ -333,6 +402,51 @@ function startStats() {
   window.setInterval(updateStats, 60000);
 }
 
+function showLikePopup() {
+  if (
+    !likePopup ||
+    likePopup.dataset.closed === "true" ||
+    localStorage.getItem("siteLiked") === "true"
+  ) {
+    return;
+  }
+
+  likePopup.hidden = false;
+}
+
+function scheduleLikePopup() {
+  if (likePopupTimer || localStorage.getItem("siteLiked") === "true") return;
+
+  likePopupTimer = window.setTimeout(showLikePopup, 11000);
+}
+
+function setupLikePopup() {
+  document.querySelectorAll("[data-close-like-popup]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!likePopup) return;
+
+      likePopup.dataset.closed = "true";
+      likePopup.hidden = true;
+    });
+  });
+
+  likePopupButton?.addEventListener("click", async () => {
+    likePopupButton.disabled = true;
+    if (likePopupStatus) likePopupStatus.textContent = "LIKE.EXE arbeitet...";
+
+    const likes = await saveLike();
+
+    if (likePopupStatus) likePopupStatus.textContent = `Danke. Likes jetzt: ${likes}`;
+    if (likePopup) {
+      likePopup.dataset.closed = "true";
+      window.setTimeout(() => {
+        likePopup.hidden = true;
+      }, 900);
+    }
+    updateStats();
+  });
+}
+
 function updateClocks() {
   const now = new Date();
 
@@ -363,6 +477,251 @@ function getTemplate(appKey) {
 function bringToFront(windowElement) {
   topZ += 1;
   windowElement.style.zIndex = String(topZ);
+}
+
+function closeAllWindows() {
+  windowLayer?.replaceChildren();
+}
+
+function makeAppIconsMovable() {
+  document.querySelectorAll(".app-icon, .phone-app").forEach((icon) => {
+    makeAppIconMovable(icon);
+  });
+}
+
+function initializeIconGrid(parent) {
+  if (!parent) return;
+
+  parent.querySelectorAll(".app-icon, .phone-app").forEach((icon) => {
+    if (icon.dataset.gridColumn && icon.dataset.gridRow) return;
+
+    const rect = icon.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const cell = getSnappedIconCell(icon, rect.left - parentRect.left, rect.top - parentRect.top);
+
+    icon.dataset.gridColumn = String(cell.column);
+    icon.dataset.gridRow = String(cell.row);
+  });
+}
+
+function parsePixelValue(value, fallback = 0) {
+  const parsed = Number.parseFloat(value);
+
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function parseGridColumns(value) {
+  return value
+    .split(" ")
+    .map((column) => parsePixelValue(column))
+    .filter((column) => column > 0);
+}
+
+function getIconGridMetrics(icon) {
+  const parent = icon.parentElement;
+
+  if (!parent) return null;
+
+  if (parent.classList.contains("home-grid")) {
+    const styles = window.getComputedStyle(parent);
+    const columns = parseGridColumns(styles.gridTemplateColumns);
+    const columnWidth = columns[0] || icon.offsetWidth;
+    const rowHeight = parsePixelValue(styles.gridAutoRows, icon.offsetHeight);
+    const columnGap = parsePixelValue(styles.columnGap);
+    const rowGap = parsePixelValue(styles.rowGap);
+    const paddingLeft = parsePixelValue(styles.paddingLeft);
+    const paddingTop = parsePixelValue(styles.paddingTop);
+    const paddingBottom = parsePixelValue(styles.paddingBottom);
+    const columnsCount = Math.max(1, columns.length || 1);
+    const rowStep = rowHeight + rowGap;
+    const usableHeight = Math.max(rowHeight, parent.clientHeight - paddingTop - paddingBottom);
+    const rowsCount = Math.max(1, Math.floor((usableHeight + rowGap) / rowStep));
+
+    return {
+      baseLeft: paddingLeft + Math.max(0, (columnWidth - icon.offsetWidth) / 2),
+      baseTop: paddingTop,
+      stepX: columnWidth + columnGap,
+      stepY: rowStep,
+      columnsCount,
+      rowsCount
+    };
+  }
+
+  return {
+    baseLeft: 24,
+    baseTop: 26,
+    stepX: 112,
+    stepY: 112,
+    columnsCount: Math.max(1, Math.floor((parent.clientWidth - 24) / 112) + 1),
+    rowsCount: Math.max(1, Math.floor((parent.clientHeight - 26) / 112) + 1)
+  };
+}
+
+function getSnappedIconPosition(icon, left, top) {
+  const cell = getSnappedIconCell(icon, left, top);
+
+  return getIconPositionForCell(icon, cell.column, cell.row);
+}
+
+function getSnappedIconCell(icon, left, top) {
+  const metrics = getIconGridMetrics(icon);
+
+  if (!metrics) return { column: 0, row: 0 };
+
+  const column = Math.max(
+    0,
+    Math.min(
+      metrics.columnsCount - 1,
+      Math.round((left - metrics.baseLeft) / metrics.stepX)
+    )
+  );
+  const row = Math.max(
+    0,
+    Math.min(
+      metrics.rowsCount - 1,
+      Math.round((top - metrics.baseTop) / metrics.stepY)
+    )
+  );
+
+  return { column, row };
+}
+
+function getIconPositionForCell(icon, column, row) {
+  const metrics = getIconGridMetrics(icon);
+
+  if (!metrics) return { left: 0, top: 0 };
+
+  return {
+    left: metrics.baseLeft + column * metrics.stepX,
+    top: metrics.baseTop + row * metrics.stepY
+  };
+}
+
+function placeIconOnGrid(icon, left, top) {
+  const cell = getSnappedIconCell(icon, left, top);
+
+  placeIconInCell(icon, cell.column, cell.row);
+}
+
+function placeIconInCell(icon, column, row) {
+  const position = getIconPositionForCell(icon, column, row);
+  const metrics = getIconGridMetrics(icon);
+
+  if (icon.parentElement?.classList.contains("home-grid")) {
+    icon.style.position = "";
+    icon.style.left = "";
+    icon.style.top = "";
+    icon.style.order = String(row * (metrics?.columnsCount || 1) + column);
+  } else {
+    icon.style.position = "absolute";
+    icon.style.left = `${position.left}px`;
+    icon.style.top = `${position.top}px`;
+  }
+
+  icon.dataset.gridColumn = String(column);
+  icon.dataset.gridRow = String(row);
+}
+
+function findIconInCell(icon, column, row) {
+  return Array.from(icon.parentElement?.children || []).find((sibling) => (
+    sibling !== icon &&
+    sibling.dataset.gridColumn === String(column) &&
+    sibling.dataset.gridRow === String(row)
+  ));
+}
+
+function makeAppIconMovable(icon) {
+  let startX = 0;
+  let startY = 0;
+  let initialLeft = 0;
+  let initialTop = 0;
+  let lastLeft = 0;
+  let lastTop = 0;
+  let startColumn = 0;
+  let startRow = 0;
+  let moved = false;
+
+  icon.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+
+    initializeIconGrid(icon.parentElement);
+
+    startX = event.clientX;
+    startY = event.clientY;
+    moved = false;
+
+    const rect = icon.getBoundingClientRect();
+    const parentRect = icon.parentElement.getBoundingClientRect();
+
+    initialLeft = rect.left - parentRect.left;
+    initialTop = rect.top - parentRect.top;
+    lastLeft = initialLeft;
+    lastTop = initialTop;
+    startColumn = Number(icon.dataset.gridColumn || 0);
+    startRow = Number(icon.dataset.gridRow || 0);
+    icon.setPointerCapture(event.pointerId);
+  });
+
+  icon.addEventListener("pointermove", (event) => {
+    if (!icon.hasPointerCapture(event.pointerId)) return;
+
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+
+    if (!moved && Math.hypot(deltaX, deltaY) < 6) return;
+
+    moved = true;
+    icon.dataset.appDragged = "true";
+    icon.classList.add("is-dragging");
+
+    const parent = icon.parentElement;
+    const maxLeft = parent.clientWidth - icon.offsetWidth;
+    const maxTop = parent.clientHeight - icon.offsetHeight;
+    const nextLeft = Math.max(0, Math.min(initialLeft + deltaX, maxLeft));
+    const nextTop = Math.max(0, Math.min(initialTop + deltaY, maxTop));
+
+    lastLeft = nextLeft;
+    lastTop = nextTop;
+
+    if (parent.classList.contains("home-grid")) {
+      const position = getSnappedIconPosition(icon, nextLeft, nextTop);
+
+      icon.style.transform = `translate(${position.left - initialLeft}px, ${position.top - initialTop}px)`;
+    } else {
+      placeIconOnGrid(icon, nextLeft, nextTop);
+    }
+  });
+
+  icon.addEventListener("pointerup", (event) => {
+    if (icon.hasPointerCapture(event.pointerId)) {
+      icon.releasePointerCapture(event.pointerId);
+    }
+
+    icon.classList.remove("is-dragging");
+
+    if (moved) {
+      const targetCell = getSnappedIconCell(icon, lastLeft, lastTop);
+      const occupiedIcon = findIconInCell(icon, targetCell.column, targetCell.row);
+
+      icon.style.transform = "";
+
+      if (occupiedIcon) {
+        placeIconInCell(occupiedIcon, startColumn, startRow);
+      }
+
+      placeIconInCell(icon, targetCell.column, targetCell.row);
+
+      window.setTimeout(() => {
+        delete icon.dataset.appDragged;
+      }, 0);
+    }
+  });
+
+  icon.addEventListener("pointercancel", () => {
+    icon.classList.remove("is-dragging");
+    icon.style.transform = "";
+    delete icon.dataset.appDragged;
+  });
 }
 
 function openWindow(appKey) {
@@ -423,6 +782,10 @@ function openWindow(appKey) {
     setupMailForm(windowElement);
   }
 
+  if (appKey === "music") {
+    updateMusicFramesTheme(getSavedTheme());
+  }
+
   if (appKey === "flappy") {
     setupFlappyGame(windowElement);
   }
@@ -449,6 +812,8 @@ function openWindow(appKey) {
 }
 
 function clampWindowToViewport(windowElement) {
+  clampWindowSize(windowElement);
+
   const maxLeft = window.innerWidth - windowElement.offsetWidth - 12;
   const maxTop = window.innerHeight - windowElement.offsetHeight - 12;
   const nextLeft = Math.max(12, Math.min(windowElement.offsetLeft, maxLeft));
@@ -456,6 +821,27 @@ function clampWindowToViewport(windowElement) {
 
   windowElement.style.left = `${nextLeft}px`;
   windowElement.style.top = `${nextTop}px`;
+}
+
+function getWindowSizeBounds(windowElement) {
+  return windowSizeBounds[windowElement.dataset.window] || windowSizeBounds.default;
+}
+
+function clampWindowSize(windowElement) {
+  const bounds = getWindowSizeBounds(windowElement);
+  const maxWidth = Math.max(
+    bounds.minWidth,
+    Math.min(bounds.maxWidth, window.innerWidth - windowElement.offsetLeft - 12)
+  );
+  const maxHeight = Math.max(
+    bounds.minHeight,
+    Math.min(bounds.maxHeight, window.innerHeight - windowElement.offsetTop - 12)
+  );
+  const nextWidth = Math.max(bounds.minWidth, Math.min(windowElement.offsetWidth, maxWidth));
+  const nextHeight = Math.max(bounds.minHeight, Math.min(windowElement.offsetHeight, maxHeight));
+
+  windowElement.style.width = `${nextWidth}px`;
+  windowElement.style.height = `${nextHeight}px`;
 }
 
 function makeWindowDraggable(windowElement) {
@@ -560,15 +946,14 @@ function makeWindowResizable(windowElement) {
   handle.addEventListener("pointermove", (event) => {
     if (!isResizing) return;
 
-    const minWidth = windowElement.classList.contains("mail-window") ? 520 : 460;
-    const minHeight = windowElement.classList.contains("mail-window") ? 440 : 430;
-    const maxWidth = window.innerWidth - windowElement.offsetLeft - 12;
-    const maxHeight = window.innerHeight - windowElement.offsetTop - 12;
-    const nextWidth = initialWidth + event.clientX - startX;
-    const nextHeight = initialHeight + event.clientY - startY;
-
-    windowElement.style.width = `${Math.max(minWidth, Math.min(nextWidth, maxWidth))}px`;
-    windowElement.style.height = `${Math.max(minHeight, Math.min(nextHeight, maxHeight))}px`;
+    resizeWindowToPointer(windowElement, {
+      initialWidth,
+      initialHeight,
+      startX,
+      startY,
+      clientX: event.clientX,
+      clientY: event.clientY
+    });
   });
 
   handle.addEventListener("pointerup", (event) => {
@@ -612,10 +997,17 @@ function makeWindowResizable(windowElement) {
 }
 
 function resizeWindowToPointer(windowElement, pointer) {
-  const minWidth = windowElement.classList.contains("mail-window") ? 520 : 460;
-  const minHeight = windowElement.classList.contains("mail-window") ? 440 : 430;
-  const maxWidth = window.innerWidth - windowElement.offsetLeft - 12;
-  const maxHeight = window.innerHeight - windowElement.offsetTop - 12;
+  const bounds = getWindowSizeBounds(windowElement);
+  const minWidth = bounds.minWidth;
+  const minHeight = bounds.minHeight;
+  const maxWidth = Math.max(
+    minWidth,
+    Math.min(bounds.maxWidth, window.innerWidth - windowElement.offsetLeft - 12)
+  );
+  const maxHeight = Math.max(
+    minHeight,
+    Math.min(bounds.maxHeight, window.innerHeight - windowElement.offsetTop - 12)
+  );
   const nextWidth = pointer.initialWidth + pointer.clientX - pointer.startX;
   const nextHeight = pointer.initialHeight + pointer.clientY - pointer.startY;
 
@@ -635,6 +1027,10 @@ function openPhoneApp(appKey) {
 
   if (appKey === "mail") {
     setupMailForm(phoneScreen);
+  }
+
+  if (appKey === "music") {
+    updateMusicFramesTheme(getSavedTheme());
   }
 
   if (appKey === "flappy") {
@@ -937,8 +1333,45 @@ function setupMailForm(scope) {
   const status = scope.querySelector("[data-mail-status]");
   const submitButton = scope.querySelector('button[type="submit"]');
   const turnstileElement = scope.querySelector("[data-turnstile]");
+  const emailInput = scope.querySelector("[data-email-input]");
 
   if (!form || !status || !submitButton) return;
+
+  function setMailStatus(message, isError = false) {
+    status.textContent = message;
+    status.classList.toggle("is-error", isError);
+  }
+
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+  }
+
+  function validateEmail({ showEmpty = false } = {}) {
+    if (!emailInput) return true;
+
+    const email = emailInput.value.trim();
+    const isEmpty = email.length === 0;
+    const isInvalid = (!isEmpty || showEmpty) && !isValidEmail(email);
+
+    emailInput.classList.toggle("is-invalid", isInvalid);
+    emailInput.setAttribute("aria-invalid", String(isInvalid));
+
+    return !isInvalid;
+  }
+
+  emailInput?.addEventListener("input", () => {
+    validateEmail();
+
+    if (!emailInput.classList.contains("is-invalid")) {
+      setMailStatus("");
+    }
+  });
+
+  emailInput?.addEventListener("blur", () => {
+    if (!validateEmail()) {
+      setMailStatus("Bitte gib eine gueltige E-Mail-Adresse ein.", true);
+    }
+  });
 
   renderTurnstile(turnstileElement);
 
@@ -952,16 +1385,22 @@ function setupMailForm(scope) {
     const turnstileToken = String(formData.get("cf-turnstile-response") || "").trim();
 
     if (!name || !email || !message) {
-      status.textContent = "Bitte fuelle Name, E-Mail und Nachricht aus.";
+      setMailStatus("Bitte fuelle Name, E-Mail und Nachricht aus.", true);
+      validateEmail({ showEmpty: true });
+      return;
+    }
+
+    if (!validateEmail({ showEmpty: true })) {
+      setMailStatus("Bitte gib eine gueltige E-Mail-Adresse ein.", true);
       return;
     }
 
     if (!turnstileToken) {
-      status.textContent = "Bitte bestaetige kurz die Sicherheitspruefung.";
+      setMailStatus("Bitte bestaetige kurz die Sicherheitspruefung.", true);
       return;
     }
 
-    status.textContent = "Wird gesendet...";
+    setMailStatus("Wird gesendet...");
     submitButton.disabled = true;
 
     try {
@@ -986,10 +1425,11 @@ function setupMailForm(scope) {
 
       form.reset();
       resetTurnstile(turnstileElement);
-      status.textContent = "Nachricht gesendet. Danke!";
+      validateEmail();
+      setMailStatus("Nachricht gesendet. Danke!");
     } catch (error) {
       console.error("Mail konnte nicht gesendet werden:", error);
-      status.textContent = error.message || "Nachricht konnte nicht gesendet werden.";
+      setMailStatus(error.message || "Nachricht konnte nicht gesendet werden.", true);
     } finally {
       submitButton.disabled = false;
     }
@@ -1050,13 +1490,21 @@ document.querySelectorAll("[data-start-system]").forEach((button) => {
 });
 
 document.querySelectorAll("[data-open-app]").forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", (event) => {
+    if (event.currentTarget.dataset.appDragged === "true") return;
+
     openWindow(button.dataset.openApp);
   });
 });
 
+document.querySelectorAll("[data-close-windows]").forEach((button) => {
+  button.addEventListener("click", closeAllWindows);
+});
+
 document.querySelectorAll("[data-open-phone-app]").forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", (event) => {
+    if (event.currentTarget.dataset.appDragged === "true") return;
+
     openPhoneApp(button.dataset.openPhoneApp);
   });
 });
@@ -1093,6 +1541,8 @@ document.addEventListener("keydown", (event) => {
 
 typeBoot();
 setupTopbarMenus();
+setupLikePopup();
+makeAppIconsMovable();
 applyTheme(getSavedTheme());
 startStats();
 
