@@ -453,19 +453,41 @@ html.theme-light .topbar-menu-panel button.is-active {
   left: var(--x);
   top: var(--y);
   width: 94px;
-  min-height: 86px;
+  height: 96px;
   display: grid;
+  grid-template-rows: 58px 31px;
   justify-items: center;
+  align-items: start;
   gap: 7px;
   color: var(--ink);
   text-align: center;
+  user-select: none;
+  touch-action: none;
 }
 
 .app-icon span:last-child,
 .phone-app span:last-child {
+  width: 100%;
+  min-height: 31px;
+  display: flex;
+  align-items: start;
+  justify-content: center;
   font-size: 13px;
   font-weight: 750;
+  line-height: 1.12;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+  overflow-wrap: anywhere;
+}
+
+.phone-app span:last-child {
+  font-size: 12.5px;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+html.theme-light .app-icon span:last-child,
+html.theme-light .phone-app span:last-child {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
 .icon-badge {
@@ -494,6 +516,12 @@ html.theme-light .topbar-menu-panel button.is-active {
   transform: translateY(-3px) scale(1.04);
 }
 
+.app-icon.is-dragging,
+.phone-app.is-dragging {
+  z-index: 25;
+  cursor: grabbing;
+}
+
 .window-layer {
   position: absolute;
   inset: 0;
@@ -505,7 +533,9 @@ html.theme-light .topbar-menu-panel button.is-active {
   position: absolute;
   width: min(620px, calc(100vw - 32px));
   min-width: 460px;
+  max-width: min(680px, calc(100vw - 24px));
   min-height: 320px;
+  max-height: min(680px, calc(100vh - 50px));
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 18px;
@@ -524,21 +554,27 @@ html.theme-light .window {
 
 .mail-window {
   min-width: 520px;
-  min-height: 440px;
+  max-width: min(760px, calc(100vw - 24px));
+  min-height: 520px;
+  max-height: min(720px, calc(100vh - 50px));
   width: min(700px, calc(100vw - 32px));
   height: min(650px, calc(100vh - 72px));
 }
 
 .music-window {
   min-width: 460px;
-  min-height: 430px;
-  width: min(760px, calc(100vw - 32px));
-  height: min(680px, calc(100vh - 72px));
+  max-width: min(620px, calc(100vw - 24px));
+  min-height: 500px;
+  max-height: min(620px, calc(100vh - 50px));
+  width: min(560px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 72px));
 }
 
 .flappy-window {
   min-width: 460px;
-  min-height: 390px;
+  max-width: min(640px, calc(100vw - 24px));
+  min-height: 520px;
+  max-height: min(820px, calc(100vh - 50px));
   width: min(620px, calc(100vw - 32px));
   height: min(760px, calc(100vh - 72px));
 }
@@ -718,75 +754,17 @@ html.theme-light .window-bar {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 20% 0%, rgba(240, 215, 131, 0.15), transparent 34%),
-    radial-gradient(circle at 86% 8%, rgba(220, 178, 206, 0.18), transparent 32%),
-    #101418;
+  background: #101418;
 }
 
 html.theme-light .music-app {
-  background:
-    radial-gradient(circle at 20% 0%, rgba(223, 190, 118, 0.28), transparent 34%),
-    radial-gradient(circle at 86% 8%, rgba(217, 163, 195, 0.26), transparent 32%),
-    #f6f2ea;
-}
-
-.music-hero {
-  min-height: 150px;
-  padding: 22px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: end;
-  gap: 18px;
-  border-bottom: 1px solid var(--line);
-}
-
-.music-cover {
-  width: 106px;
-  height: 106px;
-  display: grid;
-  place-items: center;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.55), transparent 23%),
-    linear-gradient(135deg, #f0d783, #d08c7f 52%, #7c4c73);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 22px 52px rgba(0, 0, 0, 0.34);
-}
-
-.music-note {
-  color: #fff;
-  font-size: 42px;
-  font-weight: 950;
-  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-}
-
-.music-kicker {
-  margin: 0 0 6px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.music-hero strong {
-  display: block;
-  color: var(--ink);
-  font-size: clamp(32px, 5vw, 48px);
-  line-height: 0.95;
-}
-
-.music-hero p:last-child {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 15px;
+  background: #f8f8fa;
 }
 
 .music-frame {
   width: 100%;
   flex: 1;
-  min-height: 360px;
+  min-height: 0;
   display: block;
   border: 0;
   background: transparent;
@@ -919,6 +897,32 @@ html.theme-light .mail-toolbar button {
   border-bottom: 1px solid var(--line);
 }
 
+.mail-compose label:focus-within {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+html.theme-light .mail-compose label:focus-within {
+  background: rgba(23, 24, 23, 0.045);
+}
+
+.mail-compose .mail-row-readonly {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+html.theme-light .mail-compose .mail-row-readonly {
+  background: rgba(23, 24, 23, 0.035);
+}
+
+.mail-compose .mail-row-readonly span,
+.mail-compose .mail-row-readonly input {
+  color: rgba(244, 241, 234, 0.46);
+}
+
+html.theme-light .mail-compose .mail-row-readonly span,
+html.theme-light .mail-compose .mail-row-readonly input {
+  color: rgba(23, 24, 23, 0.42);
+}
+
 .mail-compose label span {
   color: var(--muted);
   font-size: 13px;
@@ -928,10 +932,29 @@ html.theme-light .mail-toolbar button {
 .mail-compose input,
 .mail-message {
   width: 100%;
-  border: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
   outline: none;
   background: transparent;
   color: var(--ink);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.mail-compose input {
+  min-height: 34px;
+  margin-block: 5px;
+  padding: 0 10px;
+}
+
+.mail-compose input:focus {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+html.theme-light .mail-compose input:focus {
+  background: rgba(23, 24, 23, 0.045);
 }
 
 .mail-compose input::placeholder,
@@ -940,7 +963,18 @@ html.theme-light .mail-toolbar button {
 }
 
 .mail-compose input[readonly] {
+  cursor: default;
   color: var(--muted);
+}
+
+.mail-compose input.is-invalid {
+  border-color: #ff453a;
+  background: rgba(255, 69, 58, 0.1);
+  box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.16);
+}
+
+html.theme-light .mail-compose input.is-invalid {
+  background: rgba(255, 69, 58, 0.09);
 }
 
 .mail-message {
@@ -948,7 +982,9 @@ html.theme-light .mail-toolbar button {
   min-height: 180px;
   padding: 18px 14px;
   resize: none;
+  border: 0;
   border-bottom: 1px solid var(--line);
+  border-radius: 0;
   line-height: 1.55;
 }
 
@@ -965,6 +1001,161 @@ html.theme-light .mail-toolbar button {
   padding: 0 14px 12px;
   color: var(--muted);
   font-size: 13px;
+}
+
+.mail-status.is-error {
+  color: #ff6961;
+}
+
+.like-popup {
+  position: fixed;
+  right: clamp(14px, 4vw, 48px);
+  bottom: clamp(18px, 5vw, 54px);
+  z-index: 80;
+  width: min(300px, calc(100vw - 28px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(12, 16, 20, 0.84);
+  color: var(--ink);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  backdrop-filter: blur(24px);
+  animation: popup-in 0.22s ease;
+}
+
+html.theme-light .like-popup {
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 70px rgba(59, 55, 45, 0.18);
+}
+
+.like-popup-bar {
+  min-height: 34px;
+  padding: 0 8px 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.like-popup-bar button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(120, 120, 128, 0.18);
+  color: currentColor;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.like-popup-body {
+  padding: 16px;
+  background: transparent;
+}
+
+.like-popup-alert {
+  margin: 0 0 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.like-popup h2 {
+  margin: 0 0 6px;
+  font-size: 21px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.like-popup p {
+  margin: 0 0 13px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.like-popup-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.like-popup-actions button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.like-popup-actions button:disabled {
+  cursor: default;
+  filter: grayscale(0.35);
+  opacity: 0.72;
+}
+
+.like-popup-actions span {
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+html[data-system="minios"] .like-popup {
+  left: 50%;
+  right: auto;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  width: min(300px, calc(100vw - 48px));
+  border-radius: 22px;
+  text-align: center;
+  transform: translateX(-50%);
+  animation: minios-popup-in 0.24s ease;
+}
+
+html[data-system="minios"] .like-popup-bar {
+  min-height: 0;
+  padding: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+
+html[data-system="minios"] .like-popup-bar strong {
+  display: none;
+}
+
+html[data-system="minios"] .like-popup-bar button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+html[data-system="minios"] .like-popup-body {
+  padding: 28px 20px 18px;
+}
+
+@keyframes popup-in {
+  from {
+    opacity: 0;
+    transform: translate(16px, 18px) scale(0.92);
+  }
+}
+
+@keyframes minios-popup-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 18px) scale(0.96);
+  }
 }
 
 .phone-shell {
@@ -1125,18 +1316,24 @@ html.theme-light .phone {
   min-height: 520px;
   padding: 32px 22px;
   display: grid;
-  grid-template-columns: repeat(2, 76px);
+  grid-template-columns: repeat(2, 98px);
+  grid-auto-rows: 106px;
   align-content: start;
-  gap: 26px 18px;
+  gap: 20px 8px;
 }
 
 .phone-app {
-  min-height: 92px;
+  width: 98px;
+  height: 106px;
   display: grid;
+  grid-template-rows: 62px 36px;
   justify-items: center;
+  align-items: start;
   gap: 8px;
   color: var(--ink);
   text-align: center;
+  user-select: none;
+  touch-action: none;
 }
 
 .phone-app .icon-badge {
@@ -1315,27 +1512,6 @@ html.theme-light .phone-content .flappy-app {
     0 18px 60px rgba(59, 55, 45, 0.1);
 }
 
-.phone-content .music-hero {
-  min-height: 0;
-  padding: 18px;
-  grid-template-columns: 78px 1fr;
-  align-items: center;
-}
-
-.phone-content .music-cover {
-  width: 78px;
-  height: 78px;
-  border-radius: 20px;
-}
-
-.phone-content .music-note {
-  font-size: 32px;
-}
-
-.phone-content .music-hero strong {
-  font-size: 28px;
-}
-
 .phone-content .music-frame {
   min-height: 420px;
 }
@@ -1414,7 +1590,12 @@ html.theme-light .phone-content .flappy-app {
   }
 
   .home-grid {
-    grid-template-columns: repeat(4, minmax(64px, 1fr));
+    grid-template-columns: repeat(4, minmax(72px, 82px));
+    justify-content: space-between;
     padding-inline: 16px;
+  }
+
+  .phone-app {
+    width: 82px;
   }
 }
