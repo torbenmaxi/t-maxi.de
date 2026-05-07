@@ -53,7 +53,7 @@
 
     <section class="desktop-shell" id="maxios" aria-label="T-Maxi Desktop" hidden>
       <header class="topbar">
-        <button class="brand" type="button" data-open-app="mail">
+        <button class="brand" type="button" data-close-windows aria-label="Alle Fenster schliessen">
           <span class="brand-mark" aria-hidden="true"></span>
           <span>MaxiOS</span>
         </button>
@@ -185,7 +185,7 @@
             <span class="icon-badge" aria-hidden="true">
               <img src="./assets/icons/settings.svg" alt="" draggable="false" />
             </span>
-            <span>Einstellung</span>
+            <span>Einstellungen</span>
           </button>
         </div>
 
@@ -205,18 +205,6 @@
 
   <template id="app-music">
     <div class="music-app">
-      <header class="music-hero">
-        <div class="music-cover" aria-hidden="true">
-          <span class="music-note">♪</span>
-        </div>
-
-        <div>
-          <p class="music-kicker">Playlist</p>
-          <strong>Seventeen</strong>
-          <p>Eine Playlist fuer nebenbei.</p>
-        </div>
-      </header>
-
       <iframe
         class="music-frame"
         allow="autoplay *; encrypted-media *;"
@@ -260,7 +248,7 @@
         action="https://formspree.io/f/xvzdlego"
         method="POST"
       >
-        <label>
+        <label class="mail-row-readonly">
           <span>An</span>
           <input type="text" name="to" value="Torben Maximilian" readonly />
         </label>
@@ -272,7 +260,14 @@
 
         <label>
           <span>E-Mail</span>
-          <input name="email" type="email" placeholder="deine@mail.de" autocomplete="email" required />
+          <input
+            name="email"
+            type="email"
+            placeholder="deine@mail.de"
+            autocomplete="email"
+            data-email-input
+            required
+          />
         </label>
 
         <label>
@@ -340,6 +335,24 @@
       </section>
     </div>
   </template>
+
+  <aside class="like-popup" id="likePopup" aria-live="polite" hidden>
+    <div class="like-popup-bar">
+      <strong>Hinweis</strong>
+      <button type="button" data-close-like-popup aria-label="Popup schliessen">X</button>
+    </div>
+
+    <div class="like-popup-body">
+      <p class="like-popup-alert">Kurzer Check</p>
+      <h2>Magst du die Seite?</h2>
+      <p>Ein Like reicht.</p>
+
+      <div class="like-popup-actions">
+        <button type="button" data-like-site>Liken</button>
+        <span data-like-popup-status>Noch nicht geliked.</span>
+      </div>
+    </div>
+  </aside>
 
   <script src="./app.js" defer></script>
 </body>
